@@ -23,7 +23,7 @@ setup(
     keywords='flake8 datetime pyflakes pylint linter qa',
     author='Jungkook Park',
     author_email='jk@elicer.com',
-    url='',
+    url='https://github.com/pjknkda/flake8-datetimez',
     license='MIT',
     py_modules=['flake8_datetimez'],
     python_requires='>=3.6',
