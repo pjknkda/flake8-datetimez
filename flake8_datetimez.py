@@ -45,10 +45,17 @@ class DateTimeZVisitor(ast.NodeVisitor):
         self.errors = []
 
     def visit_Call(self, node):
-        is_datetime_class = (isinstance(node.func.value, ast.Name)
+        # ex: `datetime.something()``
+        is_datetime_class = (isinstance(node.func, ast.Attribute)
+                             and isinstance(node.func.value, ast.Name)
                              and node.func.value.id == 'datetime')
-        is_datetime_module_n_class = (isinstance(node.func.value, ast.Attribute)
-                                      and node.func.value.attr == 'datetime')
+
+        # ex: `datetime.datetime.something()``
+        is_datetime_module_n_class = (isinstance(node.func, ast.Attribute)
+                                      and isinstance(node.func.value, ast.Attribute)
+                                      and node.func.value.attr == 'datetime'
+                                      and isinstance(node.func.value.value, ast.Name)
+                                      and node.func.value.value.id == 'datetime')
 
         if is_datetime_class or is_datetime_module_n_class:
             if node.func.attr == 'utcnow':
@@ -109,8 +116,8 @@ class DateTimeZVisitor(ast.NodeVisitor):
         self.generic_visit(node)
 
 
-error = namedtuple('error', ['lineno', 'col', 'message', 'type', 'vars'])
-Error = partial(partial, error, type=DateTimeZChecker, vars=())
+error = namedtuple('error', ['lineno', 'col', 'message', 'type'])
+Error = partial(partial, error, type=DateTimeZChecker)
 
 
 DTZ001 = Error(
