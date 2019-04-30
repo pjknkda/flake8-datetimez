@@ -18,7 +18,7 @@ with open(path.join(wdir, 'README.md'), encoding='utf-8') as f:
 setup(
     name='flake8-datetimez',
     version=version,
-    description='A plugin for flake8 to ban naive datetime classes.',
+    description='A plugin for flake8 to ban the usage of unsafe naive datetime class.',
     long_description=long_description,
     keywords='flake8 datetime pyflakes pylint linter qa',
     author='Jungkook Park',
