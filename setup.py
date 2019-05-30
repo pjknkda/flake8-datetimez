@@ -21,14 +21,18 @@ setup(
     description='A plugin for flake8 to ban the usage of unsafe naive datetime class.',
     long_description=long_description,
     keywords='flake8 datetime pyflakes pylint linter qa',
+
     author='Jungkook Park',
     author_email='jk@elicer.com',
     url='https://github.com/pjknkda/flake8-datetimez',
     license='MIT',
-    py_modules=['flake8_datetimez'],
+
     python_requires='>=3.6',
     install_requires=['flake8 >= 3.0.0'],
+
+    py_modules=['flake8_datetimez', 'test_datetimez'],
     test_suite='test_datetimez',
+
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Environment :: Console',
@@ -44,5 +48,6 @@ setup(
         'Topic :: Software Development :: Libraries :: Python Modules',
         'Topic :: Software Development :: Quality Assurance',
     ],
+
     entry_points={'flake8.extension': ['DTZ = flake8_datetimez:DateTimeZChecker']},
 )
