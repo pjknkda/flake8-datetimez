@@ -1,13 +1,10 @@
 __version__ = '19.4.5.0'
 
 import ast
-import logging
 from collections import namedtuple
 from functools import partial
 
 import pycodestyle
-
-LOG = logging.getLogger('flake8.datetimez')
 
 
 def _get_from_keywords(keywords, arg):
