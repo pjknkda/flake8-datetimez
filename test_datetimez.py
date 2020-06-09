@@ -163,6 +163,18 @@ class TestDateTimeZ(unittest.TestCase):
         )
         self.assert_codes(errors, [])
 
+    def test_DTZ007_good_format(self):
+        errors = self.write_file_and_run_checker(
+            'datetime.datetime.strptime(something, "%H:%M:%S%z")'
+        )
+        self.assert_codes(errors, [])
+
+    def test_DTZ007_bad_format(self):
+        errors = self.write_file_and_run_checker(
+            'datetime.datetime.strptime(something, "%H:%M:%S%Z")'
+        )
+        self.assert_codes(errors, ['DTZ007'])
+
     def test_DTZ007_no_replace(self):
         errors = self.write_file_and_run_checker(
             'datetime.datetime.strptime(something, something)'

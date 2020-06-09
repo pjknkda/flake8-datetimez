@@ -17,7 +17,7 @@ A plugin for flake8 to ban the usage of unsafe naive datetime class.
 
 - **DTZ006** : The use of `datetime.datetime.fromtimestamp()` without `tz` argument is not allowed.
 
-- **DTZ007** : The use of `datetime.datetime.strptime()` must be followed by `.replace(tzinfo=)`.
+- **DTZ007** : The use of `datetime.datetime.strptime()` without %z must be followed by `.replace(tzinfo=)`.
 
 - **DTZ011** : The use of `datetime.date.today()` is not allowed. Use `datetime.datetime.now(tz=).date()` instead.
 

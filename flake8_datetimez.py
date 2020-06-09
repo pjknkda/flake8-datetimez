@@ -6,6 +6,11 @@ from functools import partial
 
 import pycodestyle
 
+try:
+    STRING_NODE = ast.Str
+except AttributeError:  # ast.Str is deprecated in Python3.8
+    STRING_NODE = ast.Constant
+
 
 def _get_from_keywords(keywords, arg):
     for keyword in keywords:
@@ -132,8 +137,11 @@ class DateTimeZVisitor(ast.NodeVisitor):
                     is_case_1 = (tzinfo_keyword is not None
                                  and not (isinstance(tzinfo_keyword.value, ast.NameConstant)
                                           and tzinfo_keyword.value.value is None))
+                # ex: `datetime.strptime(..., '...%z...')`
+                is_case_2 = ((1 < len(node.args)) and isinstance(node.args[1], STRING_NODE)
+                             and ('%z' in node.args[1].s))
 
-                if not is_case_1:
+                if not (is_case_1 or is_case_2):
                     self.errors.append(DTZ007(node.lineno, node.col_offset))
 
         # ex: `date.something()``
@@ -189,7 +197,7 @@ DTZ006 = Error(
 )
 
 DTZ007 = Error(
-    message='DTZ007 The use of `datetime.datetime.strptime()` must be followed by `.replace(tzinfo=)`.'
+    message='DTZ007 The use of `datetime.datetime.strptime()` without %z must be followed by `.replace(tzinfo=)`.'
 )
 
 DTZ011 = Error(
