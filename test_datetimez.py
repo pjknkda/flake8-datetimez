@@ -157,9 +157,15 @@ class TestDateTimeZ(unittest.TestCase):
 
     # DTZ007
 
-    def test_DTZ007_good(self):
+    def test_DTZ007_good_replace(self):
         errors = self.write_file_and_run_checker(
             'datetime.datetime.strptime(something, something).replace(tzinfo=datetime.timezone.utc)'
+        )
+        self.assert_codes(errors, [])
+
+    def test_DTZ007_good_astimezone(self):
+        errors = self.write_file_and_run_checker(
+            'datetime.datetime.strptime(something, something).astimezone()'
         )
         self.assert_codes(errors, [])
 
@@ -175,7 +181,7 @@ class TestDateTimeZ(unittest.TestCase):
         )
         self.assert_codes(errors, ['DTZ007'])
 
-    def test_DTZ007_no_replace(self):
+    def test_DTZ007_no_replace_or_astimezone(self):
         errors = self.write_file_and_run_checker(
             'datetime.datetime.strptime(something, something)'
         )
