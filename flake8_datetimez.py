@@ -124,9 +124,10 @@ class DateTimeZVisitor(ast.NodeVisitor):
                     self.errors.append(DTZ006(node.lineno, node.col_offset))
 
             elif node.func.attr == 'strptime':
-                # ex: `datetime.strptime(...).replace(tzinfo=UTC)`
                 parent = getattr(node, '_flake8_datetimez_parent', None)
                 pparent = getattr(parent, '_flake8_datetimez_parent', None)
+
+                # ex: `datetime.strptime(...).replace(tzinfo=UTC)`
                 if not (isinstance(parent, ast.Attribute)
                         and parent.attr == 'replace'):
                     is_case_1 = False
@@ -137,11 +138,22 @@ class DateTimeZVisitor(ast.NodeVisitor):
                     is_case_1 = (tzinfo_keyword is not None
                                  and not (isinstance(tzinfo_keyword.value, ast.NameConstant)
                                           and tzinfo_keyword.value.value is None))
-                # ex: `datetime.strptime(..., '...%z...')`
-                is_case_2 = ((1 < len(node.args)) and isinstance(node.args[1], STRING_NODE)
-                             and ('%z' in node.args[1].s))
 
-                if not (is_case_1 or is_case_2):
+                # ex: `datetime.strptime(...).astimezone()`
+                if not (isinstance(parent, ast.Attribute)
+                        and parent.attr == 'astimezone'):
+                    is_case_2 = False
+                elif not isinstance(pparent, ast.Call):
+                    is_case_2 = False
+                else:
+                    is_case_2 = True
+
+                # ex: `datetime.strptime(..., '...%z...')`
+                is_case_3 = (1 < len(node.args)
+                             and isinstance(node.args[1], STRING_NODE)
+                             and '%z' in node.args[1].s)
+
+                if not (is_case_1 or is_case_2 or is_case_3):
                     self.errors.append(DTZ007(node.lineno, node.col_offset))
 
         # ex: `date.something()``
