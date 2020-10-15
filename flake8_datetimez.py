@@ -58,6 +58,9 @@ class DateTimeZVisitor(ast.NodeVisitor):
                              and isinstance(node.func.value, ast.Name)
                              and node.func.value.id == 'datetime')
 
+        # ex: `datetime(2000, 1, 1, 0, 0, 0, 0)`
+        is_unqualified_datetime_class_call = isinstance(node.func, ast.Name) and node.func.id == 'datetime'
+
         # ex: `datetime.datetime.something()``
         is_datetime_module_n_class = (isinstance(node.func, ast.Attribute)
                                       and isinstance(node.func.value, ast.Attribute)
@@ -65,21 +68,20 @@ class DateTimeZVisitor(ast.NodeVisitor):
                                       and isinstance(node.func.value.value, ast.Name)
                                       and node.func.value.value.id == 'datetime')
 
-        if is_datetime_class:
-            if node.func.attr == 'datetime':
-                # ex `datetime(2000, 1, 1, 0, 0, 0, 0, datetime.timezone.utc)`
-                is_case_1 = (len(node.args) == 8
-                             and not (isinstance(node.args[7], ast.NameConstant)
-                                      and node.args[7].value is None))
+        if (is_datetime_class and node.func.attr == 'datetime') or is_unqualified_datetime_class_call:
+            # ex `datetime(2000, 1, 1, 0, 0, 0, 0, datetime.timezone.utc)`
+            is_case_1 = (len(node.args) == 8
+                            and not (isinstance(node.args[7], ast.NameConstant)
+                                    and node.args[7].value is None))
 
-                # ex `datetime.datetime(2000, 1, 1, tzinfo=datetime.timezone.utc)`
-                tzinfo_keyword = _get_from_keywords(node.keywords, 'tzinfo')
-                is_case_2 = (tzinfo_keyword is not None
-                             and not (isinstance(tzinfo_keyword.value, ast.NameConstant)
-                                      and tzinfo_keyword.value.value is None))
+            # ex `datetime.datetime(2000, 1, 1, tzinfo=datetime.timezone.utc)`
+            tzinfo_keyword = _get_from_keywords(node.keywords, 'tzinfo')
+            is_case_2 = (tzinfo_keyword is not None
+                            and not (isinstance(tzinfo_keyword.value, ast.NameConstant)
+                                    and tzinfo_keyword.value.value is None))
 
-                if not (is_case_1 or is_case_2):
-                    self.errors.append(DTZ001(node.lineno, node.col_offset))
+            if not (is_case_1 or is_case_2):
+                self.errors.append(DTZ001(node.lineno, node.col_offset))
 
         if is_datetime_class or is_datetime_module_n_class:
             if node.func.attr == 'today':
