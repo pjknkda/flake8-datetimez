@@ -1,4 +1,4 @@
-__version__ = '20.6.0'
+__version__ = '20.10.0'
 
 import ast
 from collections import namedtuple
