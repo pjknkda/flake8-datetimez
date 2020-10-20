@@ -37,6 +37,12 @@ class TestDateTimeZ(unittest.TestCase):
         )
         self.assert_codes(errors, ['DTZ001'])
 
+    def test_DTZ001_no_args_unqualified(self):
+        errors = self.write_file_and_run_checker(
+            'datetime(2000, 1, 1, 0, 0, 0)'
+        )
+        self.assert_codes(errors, ['DTZ001'])
+
     def test_DTZ001_none_args(self):
         errors = self.write_file_and_run_checker(
             'datetime.datetime(2000, 1, 1, 0, 0, 0, 0, None)'
@@ -63,6 +69,12 @@ class TestDateTimeZ(unittest.TestCase):
         )
         self.assert_codes(errors, ['DTZ002'])
 
+    def test_DTZ002_unqualified(self):
+        errors = self.write_file_and_run_checker(
+            'datetime.today()'
+        )
+        self.assert_codes(errors, ['DTZ002'])
+
     # DTZ003
 
     def test_DTZ003(self):
@@ -71,11 +83,23 @@ class TestDateTimeZ(unittest.TestCase):
         )
         self.assert_codes(errors, ['DTZ003'])
 
+    def test_DTZ003_unqualified(self):
+        errors = self.write_file_and_run_checker(
+            'datetime.utcnow()'
+        )
+        self.assert_codes(errors, ['DTZ003'])
+
     # DTZ004
 
     def test_DTZ004(self):
         errors = self.write_file_and_run_checker(
             'datetime.datetime.utcfromtimestamp(1234)'
+        )
+        self.assert_codes(errors, ['DTZ004'])
+
+    def test_DTZ004_unqualified(self):
+        errors = self.write_file_and_run_checker(
+            'datetime.utcfromtimestamp(1234)'
         )
         self.assert_codes(errors, ['DTZ004'])
 
@@ -96,6 +120,12 @@ class TestDateTimeZ(unittest.TestCase):
     def test_DTZ005_no_args(self):
         errors = self.write_file_and_run_checker(
             'datetime.datetime.now()'
+        )
+        self.assert_codes(errors, ['DTZ005'])
+
+    def test_DTZ005_no_args_unqualified(self):
+        errors = self.write_file_and_run_checker(
+            'datetime.now()'
         )
         self.assert_codes(errors, ['DTZ005'])
 
@@ -134,6 +164,12 @@ class TestDateTimeZ(unittest.TestCase):
     def test_DTZ006_no_args(self):
         errors = self.write_file_and_run_checker(
             'datetime.datetime.fromtimestamp(1234)'
+        )
+        self.assert_codes(errors, ['DTZ006'])
+
+    def test_DTZ006_no_args_unqualified(self):
+        errors = self.write_file_and_run_checker(
+            'datetime.fromtimestamp(1234)'
         )
         self.assert_codes(errors, ['DTZ006'])
 
@@ -187,6 +223,12 @@ class TestDateTimeZ(unittest.TestCase):
         )
         self.assert_codes(errors, ['DTZ007'])
 
+    def test_DTZ007_no_replace_or_astimezone_unqualified(self):
+        errors = self.write_file_and_run_checker(
+            'datetime.strptime(something, something)'
+        )
+        self.assert_codes(errors, ['DTZ007'])
+
     def test_DTZ007_wrong_replace(self):
         errors = self.write_file_and_run_checker(
             'datetime.datetime.strptime(something, something).replace(hour=1)'
@@ -207,10 +249,22 @@ class TestDateTimeZ(unittest.TestCase):
         )
         self.assert_codes(errors, ['DTZ011'])
 
+    def test_DTZ011_unqualified(self):
+        errors = self.write_file_and_run_checker(
+            'date.today()'
+        )
+        self.assert_codes(errors, ['DTZ011'])
+
     # DTZ012
 
     def test_DTZ012(self):
         errors = self.write_file_and_run_checker(
             'datetime.date.fromtimestamp(1234)'
+        )
+        self.assert_codes(errors, ['DTZ012'])
+
+    def test_DTZ012_unqualified(self):
+        errors = self.write_file_and_run_checker(
+            'date.fromtimestamp(1234)'
         )
         self.assert_codes(errors, ['DTZ012'])
