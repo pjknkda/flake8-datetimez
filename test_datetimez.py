@@ -11,7 +11,7 @@ class TestDateTimeZ(unittest.TestCase):
             self.assertTrue(error.message.startswith(code + ' '))
 
     def write_file_and_run_checker(self, content):
-        with tempfile.NamedTemporaryFile('w') as f:
+        with tempfile.NamedTemporaryFile('w', delete=False) as f:
             f.write(content)
             f.flush()
             checker = DateTimeZChecker(None, f.name)
@@ -61,6 +61,12 @@ class TestDateTimeZ(unittest.TestCase):
         )
         self.assert_codes(errors, ['DTZ001'])
 
+    def test_DTZ001_good_astimezone(self):
+        errors = self.write_file_and_run_checker(
+            'datetime.datetime(2000, 1, 1, tzinfo=None).astimezone()'
+        )
+        self.assert_codes(errors, [])
+
     # DTZ002
 
     def test_DTZ002(self):
@@ -74,6 +80,12 @@ class TestDateTimeZ(unittest.TestCase):
             'datetime.today()'
         )
         self.assert_codes(errors, ['DTZ002'])
+
+    def test_DTZ002_good_astimezone(self):
+        errors = self.write_file_and_run_checker(
+            'datetime.today().astimezone()'
+        )
+        self.assert_codes(errors, [])
 
     # DTZ003
 
@@ -89,6 +101,12 @@ class TestDateTimeZ(unittest.TestCase):
         )
         self.assert_codes(errors, ['DTZ003'])
 
+    def test_DTZ003_good_astimezone(self):
+        errors = self.write_file_and_run_checker(
+            'datetime.utcnow().astimezone()'
+        )
+        self.assert_codes(errors, [])
+
     # DTZ004
 
     def test_DTZ004(self):
@@ -102,6 +120,12 @@ class TestDateTimeZ(unittest.TestCase):
             'datetime.utcfromtimestamp(1234)'
         )
         self.assert_codes(errors, ['DTZ004'])
+
+    def test_DTZ004_good_astimezone(self):
+        errors = self.write_file_and_run_checker(
+            'datetime.utcfromtimestamp(1234).astimezone()'
+        )
+        self.assert_codes(errors, [])
 
     # DTZ005
 
@@ -147,6 +171,12 @@ class TestDateTimeZ(unittest.TestCase):
         )
         self.assert_codes(errors, ['DTZ005'])
 
+    def test_DTZ005_good_astimezone(self):
+        errors = self.write_file_and_run_checker(
+            'datetime.datetime.now(tz=None).astimezone()'
+        )
+        self.assert_codes(errors, [])
+
     # DTZ006
 
     def test_DTZ006_args_good(self):
@@ -190,6 +220,12 @@ class TestDateTimeZ(unittest.TestCase):
             'datetime.datetime.fromtimestamp(1234, tz=None)'
         )
         self.assert_codes(errors, ['DTZ006'])
+
+    def test_DTZ006_good_astimezone(self):
+        errors = self.write_file_and_run_checker(
+            'datetime.datetime.fromtimestamp(1234, tz=None).astimezone()'
+        )
+        self.assert_codes(errors, [])
 
     # DTZ007
 
