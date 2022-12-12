@@ -18,6 +18,18 @@ def _get_from_keywords(keywords, arg):
             return keyword
 
 
+def astimezone_called(node):
+    parent = getattr(node, '_flake8_datetimez_parent', None)
+    pparent = getattr(parent, '_flake8_datetimez_parent', None)
+    if not (isinstance(parent, ast.Attribute)
+            and parent.attr == 'astimezone'):
+        return False
+    elif not isinstance(pparent, ast.Call):
+        return False
+    else:
+        return True
+
+
 class DateTimeZChecker:
     name = 'flake8.datetimez'
     version = __version__
@@ -69,94 +81,87 @@ class DateTimeZVisitor(ast.NodeVisitor):
                                       and node.func.value.value.id == 'datetime')
 
         if (is_datetime_class and node.func.attr == 'datetime') or is_unqualified_datetime_class_call:
-            # ex `datetime(2000, 1, 1, 0, 0, 0, 0, datetime.timezone.utc)`
-            is_case_1 = (len(node.args) == 8
-                            and not (isinstance(node.args[7], ast.NameConstant)
-                                    and node.args[7].value is None))
+            if not astimezone_called(node):
+                # ex `datetime(2000, 1, 1, 0, 0, 0, 0, datetime.timezone.utc)`
+                is_case_1 = (len(node.args) == 8
+                                and not (isinstance(node.args[7], ast.NameConstant)
+                                        and node.args[7].value is None))
 
-            # ex `datetime.datetime(2000, 1, 1, tzinfo=datetime.timezone.utc)`
-            tzinfo_keyword = _get_from_keywords(node.keywords, 'tzinfo')
-            is_case_2 = (tzinfo_keyword is not None
-                            and not (isinstance(tzinfo_keyword.value, ast.NameConstant)
-                                    and tzinfo_keyword.value.value is None))
+                # ex `datetime.datetime(2000, 1, 1, tzinfo=datetime.timezone.utc)`
+                tzinfo_keyword = _get_from_keywords(node.keywords, 'tzinfo')
+                is_case_2 = (tzinfo_keyword is not None
+                                and not (isinstance(tzinfo_keyword.value, ast.NameConstant)
+                                        and tzinfo_keyword.value.value is None))
 
-            if not (is_case_1 or is_case_2):
-                self.errors.append(DTZ001(node.lineno, node.col_offset))
+                if not (is_case_1 or is_case_2):
+                    self.errors.append(DTZ001(node.lineno, node.col_offset))
 
         if is_datetime_class or is_datetime_module_n_class:
-            if node.func.attr == 'today':
-                self.errors.append(DTZ002(node.lineno, node.col_offset))
+            if not astimezone_called(node):
+                if node.func.attr == 'today':
+                    self.errors.append(DTZ002(node.lineno, node.col_offset))
 
-            elif node.func.attr == 'utcnow':
-                self.errors.append(DTZ003(node.lineno, node.col_offset))
+                elif node.func.attr == 'utcnow':
+                    self.errors.append(DTZ003(node.lineno, node.col_offset))
 
-            elif node.func.attr == 'utcfromtimestamp':
-                self.errors.append(DTZ004(node.lineno, node.col_offset))
+                elif node.func.attr == 'utcfromtimestamp':
+                    self.errors.append(DTZ004(node.lineno, node.col_offset))
 
-            elif node.func.attr in 'now':
-                # ex: `datetime.now(UTC)`
-                is_case_1 = (len(node.args) == 1
-                             and len(node.keywords) == 0
-                             and not (isinstance(node.args[0], ast.NameConstant)
-                                      and node.args[0].value is None))
+                elif node.func.attr in 'now':
+                    # ex: `datetime.now(UTC)`
+                    is_case_1 = (len(node.args) == 1
+                                and len(node.keywords) == 0
+                                and not (isinstance(node.args[0], ast.NameConstant)
+                                        and node.args[0].value is None))
 
-                # ex: `datetime.now(tz=UTC)`
-                tz_keyword = _get_from_keywords(node.keywords, 'tz')
-                is_case_2 = (tz_keyword is not None
-                             and not (isinstance(tz_keyword.value, ast.NameConstant)
-                                      and tz_keyword.value.value is None))
+                    # ex: `datetime.now(tz=UTC)`
+                    tz_keyword = _get_from_keywords(node.keywords, 'tz')
+                    is_case_2 = (tz_keyword is not None
+                                and not (isinstance(tz_keyword.value, ast.NameConstant)
+                                        and tz_keyword.value.value is None))
 
-                if not (is_case_1 or is_case_2):
-                    self.errors.append(DTZ005(node.lineno, node.col_offset))
+                    if not (is_case_1 or is_case_2):
+                        self.errors.append(DTZ005(node.lineno, node.col_offset))
 
-            elif node.func.attr == 'fromtimestamp':
-                # ex: `datetime.fromtimestamp(1234, UTC)`
-                is_case_1 = (len(node.args) == 2
-                             and len(node.keywords) == 0
-                             and not (isinstance(node.args[1], ast.NameConstant)
-                                      and node.args[1].value is None))
+                elif node.func.attr == 'fromtimestamp':
+                    # ex: `datetime.fromtimestamp(1234, UTC)`
+                    is_case_1 = (len(node.args) == 2
+                                and len(node.keywords) == 0
+                                and not (isinstance(node.args[1], ast.NameConstant)
+                                        and node.args[1].value is None))
 
-                # ex: `datetime.fromtimestamp(1234, tz=UTC)`
-                tz_keyword = _get_from_keywords(node.keywords, 'tz')
-                is_case_2 = (tz_keyword is not None
-                             and not (isinstance(tz_keyword.value, ast.NameConstant)
-                                      and tz_keyword.value.value is None))
+                    # ex: `datetime.fromtimestamp(1234, tz=UTC)`
+                    tz_keyword = _get_from_keywords(node.keywords, 'tz')
+                    is_case_2 = (tz_keyword is not None
+                                and not (isinstance(tz_keyword.value, ast.NameConstant)
+                                        and tz_keyword.value.value is None))
 
-                if not (is_case_1 or is_case_2):
-                    self.errors.append(DTZ006(node.lineno, node.col_offset))
+                    if not (is_case_1 or is_case_2):
+                        self.errors.append(DTZ006(node.lineno, node.col_offset))
 
-            elif node.func.attr == 'strptime':
-                parent = getattr(node, '_flake8_datetimez_parent', None)
-                pparent = getattr(parent, '_flake8_datetimez_parent', None)
+                elif node.func.attr == 'strptime':
+                    parent = getattr(node, '_flake8_datetimez_parent', None)
+                    pparent = getattr(parent, '_flake8_datetimez_parent', None)
 
-                # ex: `datetime.strptime(...).replace(tzinfo=UTC)`
-                if not (isinstance(parent, ast.Attribute)
-                        and parent.attr == 'replace'):
-                    is_case_1 = False
-                elif not isinstance(pparent, ast.Call):
-                    is_case_1 = False
-                else:
-                    tzinfo_keyword = _get_from_keywords(pparent.keywords, 'tzinfo')
-                    is_case_1 = (tzinfo_keyword is not None
-                                 and not (isinstance(tzinfo_keyword.value, ast.NameConstant)
-                                          and tzinfo_keyword.value.value is None))
+                    # ex: `datetime.strptime(...).replace(tzinfo=UTC)`
+                    if not (isinstance(parent, ast.Attribute)
+                            and parent.attr == 'replace'):
+                        is_case_1 = False
+                    elif not isinstance(pparent, ast.Call):
+                        is_case_1 = False
+                    else:
+                        tzinfo_keyword = _get_from_keywords(pparent.keywords, 'tzinfo')
+                        is_case_1 = (tzinfo_keyword is not None
+                                    and not (isinstance(tzinfo_keyword.value, ast.NameConstant)
+                                            and tzinfo_keyword.value.value is None))
 
-                # ex: `datetime.strptime(...).astimezone()`
-                if not (isinstance(parent, ast.Attribute)
-                        and parent.attr == 'astimezone'):
-                    is_case_2 = False
-                elif not isinstance(pparent, ast.Call):
-                    is_case_2 = False
-                else:
-                    is_case_2 = True
+                    # ex: `datetime.strptime(..., '...%z...')`
+                    is_case_2 = (1 < len(node.args)
+                                and isinstance(node.args[1], STRING_NODE)
+                                and '%z' in node.args[1].s)
 
-                # ex: `datetime.strptime(..., '...%z...')`
-                is_case_3 = (1 < len(node.args)
-                             and isinstance(node.args[1], STRING_NODE)
-                             and '%z' in node.args[1].s)
-
-                if not (is_case_1 or is_case_2 or is_case_3):
-                    self.errors.append(DTZ007(node.lineno, node.col_offset))
+                    if not (is_case_1 or is_case_2):
+                        self.errors.append(DTZ007(node.lineno, node.col_offset))
 
         # ex: `date.something()``
         is_date_class = (isinstance(node.func, ast.Attribute)
