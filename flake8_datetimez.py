@@ -93,7 +93,7 @@ class DateTimeZVisitor(ast.NodeVisitor):
             elif node.func.attr == "utcfromtimestamp":
                 self.errors.append(DTZ004(node.lineno, node.col_offset))
 
-            elif node.func.attr in "now":
+            elif node.func.attr == "now":
                 # ex: `datetime.now(UTC)`
                 is_case_1 = len(node.args) == 1 and len(node.keywords) == 0 and not _is_none_constant(node.args[0])
 
