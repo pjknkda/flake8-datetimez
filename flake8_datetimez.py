@@ -6,10 +6,11 @@ from functools import partial
 
 import pycodestyle
 
-try:
-    STRING_NODE = ast.Str
-except AttributeError:  # ast.Str is deprecated in Python3.8
-    STRING_NODE = ast.Constant
+
+# Every literal is an `ast.Constant` since Python 3.8; the node types it replaced
+# (`ast.Str`, ...) are gone in 3.12 and the `ast.Constant.s` alias in 3.14.
+def _is_none_constant(node):
+    return isinstance(node, ast.Constant) and node.value is None
 
 
 def _get_from_keywords(keywords, arg):
@@ -73,15 +74,11 @@ class DateTimeZVisitor(ast.NodeVisitor):
 
         if (is_datetime_class and node.func.attr == "datetime") or is_unqualified_datetime_class_call:
             # ex `datetime(2000, 1, 1, 0, 0, 0, 0, datetime.timezone.utc)`
-            is_case_1 = len(node.args) == 8 and not (
-                isinstance(node.args[7], ast.Constant) and node.args[7].value is None
-            )
+            is_case_1 = len(node.args) == 8 and not _is_none_constant(node.args[7])
 
             # ex `datetime.datetime(2000, 1, 1, tzinfo=datetime.timezone.utc)`
             tzinfo_keyword = _get_from_keywords(node.keywords, "tzinfo")
-            is_case_2 = tzinfo_keyword is not None and not (
-                isinstance(tzinfo_keyword.value, ast.Constant) and tzinfo_keyword.value.value is None
-            )
+            is_case_2 = tzinfo_keyword is not None and not _is_none_constant(tzinfo_keyword.value)
 
             if not (is_case_1 or is_case_2):
                 self.errors.append(DTZ001(node.lineno, node.col_offset))
@@ -98,34 +95,22 @@ class DateTimeZVisitor(ast.NodeVisitor):
 
             elif node.func.attr in "now":
                 # ex: `datetime.now(UTC)`
-                is_case_1 = (
-                    len(node.args) == 1
-                    and len(node.keywords) == 0
-                    and not (isinstance(node.args[0], ast.Constant) and node.args[0].value is None)
-                )
+                is_case_1 = len(node.args) == 1 and len(node.keywords) == 0 and not _is_none_constant(node.args[0])
 
                 # ex: `datetime.now(tz=UTC)`
                 tz_keyword = _get_from_keywords(node.keywords, "tz")
-                is_case_2 = tz_keyword is not None and not (
-                    isinstance(tz_keyword.value, ast.Constant) and tz_keyword.value.value is None
-                )
+                is_case_2 = tz_keyword is not None and not _is_none_constant(tz_keyword.value)
 
                 if not (is_case_1 or is_case_2):
                     self.errors.append(DTZ005(node.lineno, node.col_offset))
 
             elif node.func.attr == "fromtimestamp":
                 # ex: `datetime.fromtimestamp(1234, UTC)`
-                is_case_1 = (
-                    len(node.args) == 2
-                    and len(node.keywords) == 0
-                    and not (isinstance(node.args[1], ast.Constant) and node.args[1].value is None)
-                )
+                is_case_1 = len(node.args) == 2 and len(node.keywords) == 0 and not _is_none_constant(node.args[1])
 
                 # ex: `datetime.fromtimestamp(1234, tz=UTC)`
                 tz_keyword = _get_from_keywords(node.keywords, "tz")
-                is_case_2 = tz_keyword is not None and not (
-                    isinstance(tz_keyword.value, ast.Constant) and tz_keyword.value.value is None
-                )
+                is_case_2 = tz_keyword is not None and not _is_none_constant(tz_keyword.value)
 
                 if not (is_case_1 or is_case_2):
                     self.errors.append(DTZ006(node.lineno, node.col_offset))
@@ -141,9 +126,7 @@ class DateTimeZVisitor(ast.NodeVisitor):
                     is_case_1 = False
                 else:
                     tzinfo_keyword = _get_from_keywords(pparent.keywords, "tzinfo")
-                    is_case_1 = tzinfo_keyword is not None and not (
-                        isinstance(tzinfo_keyword.value, ast.Constant) and tzinfo_keyword.value.value is None
-                    )
+                    is_case_1 = tzinfo_keyword is not None and not _is_none_constant(tzinfo_keyword.value)
 
                 # ex: `datetime.strptime(...).astimezone()`
                 if not (isinstance(parent, ast.Attribute) and parent.attr == "astimezone"):
@@ -154,7 +137,12 @@ class DateTimeZVisitor(ast.NodeVisitor):
                     is_case_2 = True
 
                 # ex: `datetime.strptime(..., '...%z...')`
-                is_case_3 = 1 < len(node.args) and isinstance(node.args[1], STRING_NODE) and "%z" in node.args[1].s
+                format_arg = node.args[1] if 1 < len(node.args) else None
+                is_case_3 = (
+                    isinstance(format_arg, ast.Constant)
+                    and isinstance(format_arg.value, str)
+                    and "%z" in format_arg.value
+                )
 
                 if not (is_case_1 or is_case_2 or is_case_3):
                     self.errors.append(DTZ007(node.lineno, node.col_offset))
