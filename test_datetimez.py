@@ -1,3 +1,4 @@
+import ast
 import tempfile
 import unittest
 
@@ -10,11 +11,12 @@ class TestDateTimeZ(unittest.TestCase):
         for error, code in zip(errors, codes):
             self.assertTrue(error.message.startswith(code + " "))
 
-    def write_file_and_run_checker(self, content):
+    def write_file_and_run_checker(self, content, pass_tree=False):
         with tempfile.NamedTemporaryFile("w") as f:
             f.write(content)
             f.flush()
-            checker = DateTimeZChecker(None, f.name)
+            tree = ast.parse(content) if pass_tree else None
+            checker = DateTimeZChecker(tree, f.name)
             return list(checker.run())
 
     # DTZ001
@@ -198,3 +200,27 @@ class TestDateTimeZ(unittest.TestCase):
     def test_DTZ012_unqualified(self):
         errors = self.write_file_and_run_checker("date.fromtimestamp(1234)")
         self.assert_codes(errors, ["DTZ012"])
+
+    # general
+
+    def test_unrelated_calls(self):
+        errors = self.write_file_and_run_checker(
+            "import time\n"
+            "time.time()\n"
+            "foo.today()\n"
+            "foo.now()\n"
+            "foo.utcnow()\n"
+            "foo.fromtimestamp(1234)\n"
+            "foo.strptime(something, something)\n"
+        )
+        self.assert_codes(errors, [])
+
+    def test_pre_parsed_tree(self):
+        # flake8 hands the plugin an already parsed tree instead of `None`
+        errors = self.write_file_and_run_checker("datetime.datetime.now()", pass_tree=True)
+        self.assert_codes(errors, ["DTZ005"])
+
+    def test_positions_of_multiple_errors(self):
+        errors = self.write_file_and_run_checker("x = 1\nif True:\n    datetime.datetime.utcnow()\ndate.today()\n")
+        self.assert_codes(errors, ["DTZ003", "DTZ011"])
+        self.assertEqual([(error.lineno, error.col) for error in errors], [(3, 4), (4, 0)])
