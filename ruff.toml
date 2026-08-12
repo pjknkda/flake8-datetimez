@@ -1,0 +1,11 @@
+line-length = 120
+
+# The oldest target `ruff` supports. The code itself still has to run on
+# Python 3.6, so no syntax newer than 3.6 may be used here.
+target-version = "py37"
+
+[lint]
+select = ["E", "F", "W", "I"]
+ignore = [
+    "E402",  # `__version__` is defined above the imports so that `setup.py` can read it
+]
