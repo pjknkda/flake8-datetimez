@@ -128,3 +128,16 @@ dmypy.json
 .pyre/
 
 # End of https://www.gitignore.io/api/python
+
+### Local environment ###
+# Editors / IDEs
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# AI assistants
+.claude/
+CLAUDE.local.md
+.cursor/
+.aider*

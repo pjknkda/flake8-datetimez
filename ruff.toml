@@ -1,0 +1,11 @@
+line-length = 120
+
+# Keep in sync with `python_requires` in setup.py: the plugin has to keep
+# running on the oldest supported interpreter.
+target-version = "py38"
+
+[lint]
+select = ["E", "F", "W", "I"]
+ignore = [
+    "E402",  # `__version__` is defined above the imports so that `setup.py` can read it
+]

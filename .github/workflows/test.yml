@@ -1,0 +1,38 @@
+name: test
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  tox:
+    # The interpreters are provided by `uv`, so the matrix does not depend on
+    # the runner image still shipping the oldest supported Python.
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        env: [py38, py39, py310, py311, py312, py313, py314, lint]
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uvx --with tox-uv tox -e ${{ matrix.env }}
+
+  smoke:
+    # Check that the plugin is actually registered into flake8 once installed.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - run: pip install .
+      - name: flake8 reports DTZ005
+        run: |
+          printf 'import datetime\ndatetime.datetime.now()\n' > smoke.py
+          flake8 --select=DTZ smoke.py > smoke.out || true
+          cat smoke.out
+          grep -q 'DTZ005' smoke.out
