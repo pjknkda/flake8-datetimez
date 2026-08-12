@@ -1,8 +1,8 @@
 line-length = 120
 
-# The oldest target `ruff` supports. The code itself still has to run on
-# Python 3.6, so no syntax newer than 3.6 may be used here.
-target-version = "py37"
+# Keep in sync with `python_requires` in setup.py: the plugin has to keep
+# running on the oldest supported interpreter.
+target-version = "py38"
 
 [lint]
 select = ["E", "F", "W", "I"]
