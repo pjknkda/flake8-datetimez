@@ -28,14 +28,14 @@ class DateTimeZChecker:
         self.filename = filename
 
     def run(self):
-        if self.filename in ("stdin", "-", None):
-            self.filename = "stdin"
-            self.lines = pycodestyle.stdin_get_value().splitlines(True)
-        else:
-            self.lines = pycodestyle.readlines(self.filename)
-
         if not self.tree:
-            self.tree = ast.parse("".join(self.lines))
+            # flake8 always hands over a parsed tree; reading the source is
+            # only needed when the checker is driven directly.
+            if self.filename in ("stdin", "-", None):
+                lines = pycodestyle.stdin_get_value().splitlines(True)
+            else:
+                lines = pycodestyle.readlines(self.filename)
+            self.tree = ast.parse("".join(lines))
 
         for node in ast.walk(self.tree):
             for child_node in ast.iter_child_nodes(node):
@@ -44,8 +44,7 @@ class DateTimeZChecker:
         visitor = DateTimeZVisitor()
         visitor.visit(self.tree)
 
-        for err in visitor.errors:
-            yield err
+        yield from visitor.errors
 
 
 class DateTimeZVisitor(ast.NodeVisitor):
