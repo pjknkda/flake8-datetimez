@@ -3,6 +3,28 @@
 A plugin for flake8 to ban the usage of unsafe naive datetime class.
 
 
+## Consider using Ruff instead
+
+The checks of this plugin have been adopted into [Ruff](https://docs.astral.sh/ruff/)
+as its [`flake8-datetimez` (`DTZ`) rule set](https://docs.astral.sh/ruff/rules/#flake8-datetimez-dtz).
+Many thanks to the Ruff project for carrying these rules forward — their
+implementation is faster, more actively maintained, and handles more cases than
+this plugin does.
+
+If you are starting a new project, or already run Ruff, please prefer it:
+
+```toml
+# pyproject.toml
+[tool.ruff.lint]
+extend-select = ["DTZ"]
+```
+
+This plugin remains for codebases that are still on flake8, and is maintained on
+a **best-effort basis for backward compatibility** — keeping the existing rules
+working across the supported Python and flake8 versions, rather than growing new
+ones.
+
+
 ## List of warnings
 
 - **DTZ001** : The use of `datetime.datetime()` without `tzinfo` argument is not allowed.
