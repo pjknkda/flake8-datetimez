@@ -36,6 +36,35 @@ $ pip install flake8-datetimez
 - Python 3.8 or above (tested on 3.8 through 3.14)
 - flake8 3.0.0 or above
 
+
+## Development
+
+Run the test suite and the linter against every supported Python version with
+[tox](https://tox.wiki) (interpreters are downloaded automatically by
+[uv](https://docs.astral.sh/uv/)):
+
+```
+$ uvx --with tox-uv tox
+```
+
+To run a single environment, or the tests with the current interpreter only:
+
+```
+$ uvx --with tox-uv tox -e py314
+$ uvx --with tox-uv tox -e lint
+$ python -m unittest discover -p "test_*.py" -v
+```
+
+CI runs the very same environments, one job per `tox` environment.
+
+The code is formatted and linted with [ruff](https://docs.astral.sh/ruff/):
+
+```
+$ uvx ruff format .
+$ uvx ruff check .
+```
+
+
 ## License
 
 MIT

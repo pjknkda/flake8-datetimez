@@ -27,7 +27,6 @@ setup(
     python_requires=">=3.8",
     install_requires=["flake8 >= 3.0.0"],
     py_modules=["flake8_datetimez", "test_datetimez"],
-    test_suite="test_datetimez",
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Environment :: Console",
