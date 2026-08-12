@@ -23,6 +23,8 @@ A plugin for flake8 to ban the usage of unsafe naive datetime class.
 
 - **DTZ012** : The use of `datetime.date.fromtimestamp()` is not allowed. Use `datetime.datetime.fromtimestamp(, tz=).date()` instead.
 
+- **DTZ901** : The use of `datetime.datetime.min` or `datetime.datetime.max` without `.replace(tzinfo=)` is not allowed.
+
 
 ## Install
 

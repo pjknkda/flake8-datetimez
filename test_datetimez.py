@@ -201,6 +201,41 @@ class TestDateTimeZ(unittest.TestCase):
         errors = self.write_file_and_run_checker("date.fromtimestamp(1234)")
         self.assert_codes(errors, ["DTZ012"])
 
+    # DTZ901
+
+    def test_DTZ901_good_replace(self):
+        errors = self.write_file_and_run_checker("datetime.datetime.min.replace(tzinfo=datetime.timezone.utc)")
+        self.assert_codes(errors, [])
+
+    def test_DTZ901_min(self):
+        errors = self.write_file_and_run_checker("datetime.datetime.min")
+        self.assert_codes(errors, ["DTZ901"])
+
+    def test_DTZ901_max(self):
+        errors = self.write_file_and_run_checker("datetime.datetime.max")
+        self.assert_codes(errors, ["DTZ901"])
+
+    def test_DTZ901_min_unqualified(self):
+        errors = self.write_file_and_run_checker("datetime.min")
+        self.assert_codes(errors, ["DTZ901"])
+
+    def test_DTZ901_max_unqualified(self):
+        errors = self.write_file_and_run_checker("datetime.max")
+        self.assert_codes(errors, ["DTZ901"])
+
+    def test_DTZ901_wrong_replace(self):
+        errors = self.write_file_and_run_checker("datetime.datetime.min.replace(hour=1)")
+        self.assert_codes(errors, ["DTZ901"])
+
+    def test_DTZ901_none_replace(self):
+        errors = self.write_file_and_run_checker("datetime.datetime.min.replace(tzinfo=None)")
+        self.assert_codes(errors, ["DTZ901"])
+
+    def test_DTZ901_date_min_max(self):
+        # `datetime.date` carries no timezone at all, so it is out of scope
+        errors = self.write_file_and_run_checker("datetime.date.min\ndatetime.date.max\ndate.min\ndate.max\n")
+        self.assert_codes(errors, [])
+
     # general
 
     def test_unrelated_calls(self):
@@ -212,6 +247,8 @@ class TestDateTimeZ(unittest.TestCase):
             "foo.utcnow()\n"
             "foo.fromtimestamp(1234)\n"
             "foo.strptime(something, something)\n"
+            "foo.min\n"
+            "foo.max\n"
         )
         self.assert_codes(errors, [])
 

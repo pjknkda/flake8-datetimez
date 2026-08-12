@@ -19,6 +19,36 @@ def _get_from_keywords(keywords, arg):
             return keyword
 
 
+def _is_datetime_class(node):
+    # ex: `datetime.<attr>`, as in `from datetime import datetime`
+    return isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name) and node.value.id == "datetime"
+
+
+def _is_datetime_module_n_class(node):
+    # ex: `datetime.datetime.<attr>`
+    return (
+        isinstance(node, ast.Attribute)
+        and isinstance(node.value, ast.Attribute)
+        and node.value.attr == "datetime"
+        and isinstance(node.value.value, ast.Name)
+        and node.value.value.id == "datetime"
+    )
+
+
+def _is_followed_by_replace_tzinfo(node):
+    # ex: `<node>.replace(tzinfo=UTC)`
+    parent = getattr(node, "_flake8_datetimez_parent", None)
+    if not (isinstance(parent, ast.Attribute) and parent.attr == "replace"):
+        return False
+
+    pparent = getattr(parent, "_flake8_datetimez_parent", None)
+    if not isinstance(pparent, ast.Call):
+        return False
+
+    tzinfo_keyword = _get_from_keywords(pparent.keywords, "tzinfo")
+    return tzinfo_keyword is not None and not _is_none_constant(tzinfo_keyword.value)
+
+
 class DateTimeZChecker:
     name = "flake8.datetimez"
     version = __version__
@@ -53,23 +83,13 @@ class DateTimeZVisitor(ast.NodeVisitor):
 
     def visit_Call(self, node):
         # ex: `datetime.something()``
-        is_datetime_class = (
-            isinstance(node.func, ast.Attribute)
-            and isinstance(node.func.value, ast.Name)
-            and node.func.value.id == "datetime"
-        )
+        is_datetime_class = _is_datetime_class(node.func)
 
         # ex: `datetime(2000, 1, 1, 0, 0, 0, 0)`
         is_unqualified_datetime_class_call = isinstance(node.func, ast.Name) and node.func.id == "datetime"
 
         # ex: `datetime.datetime.something()``
-        is_datetime_module_n_class = (
-            isinstance(node.func, ast.Attribute)
-            and isinstance(node.func.value, ast.Attribute)
-            and node.func.value.attr == "datetime"
-            and isinstance(node.func.value.value, ast.Name)
-            and node.func.value.value.id == "datetime"
-        )
+        is_datetime_module_n_class = _is_datetime_module_n_class(node.func)
 
         if (is_datetime_class and node.func.attr == "datetime") or is_unqualified_datetime_class_call:
             # ex `datetime(2000, 1, 1, 0, 0, 0, 0, datetime.timezone.utc)`
@@ -115,25 +135,15 @@ class DateTimeZVisitor(ast.NodeVisitor):
                     self.errors.append(DTZ006(node.lineno, node.col_offset))
 
             elif node.func.attr == "strptime":
-                parent = getattr(node, "_flake8_datetimez_parent", None)
-                pparent = getattr(parent, "_flake8_datetimez_parent", None)
-
                 # ex: `datetime.strptime(...).replace(tzinfo=UTC)`
-                if not (isinstance(parent, ast.Attribute) and parent.attr == "replace"):
-                    is_case_1 = False
-                elif not isinstance(pparent, ast.Call):
-                    is_case_1 = False
-                else:
-                    tzinfo_keyword = _get_from_keywords(pparent.keywords, "tzinfo")
-                    is_case_1 = tzinfo_keyword is not None and not _is_none_constant(tzinfo_keyword.value)
+                is_case_1 = _is_followed_by_replace_tzinfo(node)
 
                 # ex: `datetime.strptime(...).astimezone()`
-                if not (isinstance(parent, ast.Attribute) and parent.attr == "astimezone"):
-                    is_case_2 = False
-                elif not isinstance(pparent, ast.Call):
-                    is_case_2 = False
-                else:
-                    is_case_2 = True
+                parent = getattr(node, "_flake8_datetimez_parent", None)
+                pparent = getattr(parent, "_flake8_datetimez_parent", None)
+                is_case_2 = (
+                    isinstance(parent, ast.Attribute) and parent.attr == "astimezone" and isinstance(pparent, ast.Call)
+                )
 
                 # ex: `datetime.strptime(..., '...%z...')`
                 format_arg = node.args[1] if 1 < len(node.args) else None
@@ -171,6 +181,14 @@ class DateTimeZVisitor(ast.NodeVisitor):
 
         self.generic_visit(node)
 
+    def visit_Attribute(self, node):
+        # ex: `datetime.datetime.min`, `datetime.max`
+        if node.attr in ("min", "max") and (_is_datetime_class(node) or _is_datetime_module_n_class(node)):
+            if not _is_followed_by_replace_tzinfo(node):
+                self.errors.append(DTZ901(node.lineno, node.col_offset))
+
+        self.generic_visit(node)
+
 
 error = namedtuple("error", ["lineno", "col", "message", "type"])
 Error = partial(partial, error, type=DateTimeZChecker)
@@ -205,4 +223,9 @@ DTZ011 = Error(
 DTZ012 = Error(
     message="DTZ012 The use of `datetime.date.fromtimestamp()` is not allowed. "
     "Use `datetime.datetime.fromtimestamp(, tz=).date()` instead."
+)
+
+DTZ901 = Error(
+    message="DTZ901 The use of `datetime.datetime.min` or `datetime.datetime.max` "
+    "without `.replace(tzinfo=)` is not allowed."
 )
