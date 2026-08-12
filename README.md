@@ -33,7 +33,7 @@ $ pip install flake8-datetimez
 ```
 
 ## Requirements
-- Python 3.6 or above
+- Python 3.8 or above (tested on 3.8 through 3.14)
 - flake8 3.0.0 or above
 
 ## License
