@@ -17,13 +17,34 @@ A plugin for flake8 to ban the usage of unsafe naive datetime class.
 
 - **DTZ006** : The use of `datetime.datetime.fromtimestamp()` without `tz` argument is not allowed.
 
-- **DTZ007** : The use of `datetime.datetime.strptime()` without %z must be followed by `.replace(tzinfo=)` or `.astimezone()`.
+- **DTZ007** : The use of `datetime.datetime.strptime()` without %z must be followed by `.replace(tzinfo=)`.
 
 - **DTZ011** : The use of `datetime.date.today()` is not allowed. Use `datetime.datetime.now(tz=).date()` instead.
 
 - **DTZ012** : The use of `datetime.date.fromtimestamp()` is not allowed. Use `datetime.datetime.fromtimestamp(, tz=).date()` instead.
 
 - **DTZ901** : The use of `datetime.datetime.min` or `datetime.datetime.max` without `.replace(tzinfo=)` is not allowed.
+
+
+## About `.astimezone()`
+
+Calling `.astimezone()` on a naive datetime attaches the **local** timezone to it, so it is
+accepted as a way to resolve **DTZ001**, **DTZ002**, **DTZ005**, **DTZ006** and **DTZ007**:
+
+```python
+datetime.datetime.now().astimezone()  # ok
+datetime.datetime(2000, 1, 1).astimezone()  # ok
+```
+
+It is deliberately *not* accepted for the remaining warnings:
+
+- **DTZ003**, **DTZ004** : `utcnow()` and `utcfromtimestamp()` return a UTC wall clock. Reading
+  that value as local time shifts the instant, so `utcnow().astimezone()` is off by the local UTC
+  offset, which is exactly what these two warnings are meant to prevent.
+
+- **DTZ011**, **DTZ012** : `datetime.date` has no `.astimezone()` at all.
+
+- **DTZ901** : `datetime.min` and `datetime.max` overflow when converted to another timezone.
 
 
 ## Install

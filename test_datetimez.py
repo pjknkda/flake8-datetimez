@@ -49,7 +49,15 @@ class TestDateTimeZ(unittest.TestCase):
         errors = self.write_file_and_run_checker("datetime.datetime(2000, 1, 1, tzinfo=None)")
         self.assert_codes(errors, ["DTZ001"])
 
+    def test_DTZ001_astimezone_good(self):
+        errors = self.write_file_and_run_checker("datetime.datetime(2000, 1, 1).astimezone()")
+        self.assert_codes(errors, [])
+
     # DTZ002
+
+    def test_DTZ002_astimezone_good(self):
+        errors = self.write_file_and_run_checker("datetime.datetime.today().astimezone()")
+        self.assert_codes(errors, [])
 
     def test_DTZ002(self):
         errors = self.write_file_and_run_checker("datetime.datetime.today()")
@@ -69,6 +77,12 @@ class TestDateTimeZ(unittest.TestCase):
         errors = self.write_file_and_run_checker("datetime.utcnow()")
         self.assert_codes(errors, ["DTZ003"])
 
+    def test_DTZ003_astimezone_still_reported(self):
+        # `.astimezone()` reads the UTC wall clock as local time, so it does
+        # not make `utcnow()` correct -- it silently shifts the instant
+        errors = self.write_file_and_run_checker("datetime.datetime.utcnow().astimezone()")
+        self.assert_codes(errors, ["DTZ003"])
+
     # DTZ004
 
     def test_DTZ004(self):
@@ -79,10 +93,19 @@ class TestDateTimeZ(unittest.TestCase):
         errors = self.write_file_and_run_checker("datetime.utcfromtimestamp(1234)")
         self.assert_codes(errors, ["DTZ004"])
 
+    def test_DTZ004_astimezone_still_reported(self):
+        # see `test_DTZ003_astimezone_still_reported`
+        errors = self.write_file_and_run_checker("datetime.datetime.utcfromtimestamp(1234).astimezone()")
+        self.assert_codes(errors, ["DTZ004"])
+
     # DTZ005
 
     def test_DTZ005_args_good(self):
         errors = self.write_file_and_run_checker("datetime.datetime.now(datetime.timezone.utc)")
+        self.assert_codes(errors, [])
+
+    def test_DTZ005_astimezone_good(self):
+        errors = self.write_file_and_run_checker("datetime.datetime.now().astimezone()")
         self.assert_codes(errors, [])
 
     def test_DTZ005_keywords_good(self):
@@ -113,6 +136,10 @@ class TestDateTimeZ(unittest.TestCase):
 
     def test_DTZ006_args_good(self):
         errors = self.write_file_and_run_checker("datetime.datetime.fromtimestamp(1234, datetime.timezone.utc)")
+        self.assert_codes(errors, [])
+
+    def test_DTZ006_astimezone_good(self):
+        errors = self.write_file_and_run_checker("datetime.datetime.fromtimestamp(1234).astimezone()")
         self.assert_codes(errors, [])
 
     def test_DTZ006_keywords_good(self):
@@ -229,6 +256,11 @@ class TestDateTimeZ(unittest.TestCase):
 
     def test_DTZ901_none_replace(self):
         errors = self.write_file_and_run_checker("datetime.datetime.min.replace(tzinfo=None)")
+        self.assert_codes(errors, ["DTZ901"])
+
+    def test_DTZ901_astimezone_still_reported(self):
+        # `datetime.min.astimezone()` overflows in most timezones
+        errors = self.write_file_and_run_checker("datetime.datetime.min.astimezone()")
         self.assert_codes(errors, ["DTZ901"])
 
     def test_DTZ901_date_min_max(self):

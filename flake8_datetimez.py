@@ -49,6 +49,13 @@ def _is_followed_by_replace_tzinfo(node):
     return tzinfo_keyword is not None and not _is_none_constant(tzinfo_keyword.value)
 
 
+def _is_followed_by_astimezone(node):
+    # ex: `<node>.astimezone()`
+    parent = getattr(node, "_flake8_datetimez_parent", None)
+    pparent = getattr(parent, "_flake8_datetimez_parent", None)
+    return isinstance(parent, ast.Attribute) and parent.attr == "astimezone" and isinstance(pparent, ast.Call)
+
+
 class DateTimeZChecker:
     name = "flake8.datetimez"
     version = __version__
@@ -99,17 +106,26 @@ class DateTimeZVisitor(ast.NodeVisitor):
             tzinfo_keyword = _get_from_keywords(node.keywords, "tzinfo")
             is_case_2 = tzinfo_keyword is not None and not _is_none_constant(tzinfo_keyword.value)
 
-            if not (is_case_1 or is_case_2):
+            # ex `datetime.datetime(2000, 1, 1).astimezone()`
+            is_case_3 = _is_followed_by_astimezone(node)
+
+            if not (is_case_1 or is_case_2 or is_case_3):
                 self.errors.append(DTZ001(node.lineno, node.col_offset))
 
         if is_datetime_class or is_datetime_module_n_class:
             if node.func.attr == "today":
-                self.errors.append(DTZ002(node.lineno, node.col_offset))
+                # ex: `datetime.today().astimezone()`, which reads the naive
+                # value as local time -- exactly what `today()` returns
+                if not _is_followed_by_astimezone(node):
+                    self.errors.append(DTZ002(node.lineno, node.col_offset))
 
             elif node.func.attr == "utcnow":
+                # `.astimezone()` is deliberately not accepted here: it would
+                # read the UTC wall clock as local time and shift the instant
                 self.errors.append(DTZ003(node.lineno, node.col_offset))
 
             elif node.func.attr == "utcfromtimestamp":
+                # `.astimezone()` is not accepted here either, see DTZ003
                 self.errors.append(DTZ004(node.lineno, node.col_offset))
 
             elif node.func.attr == "now":
@@ -120,7 +136,10 @@ class DateTimeZVisitor(ast.NodeVisitor):
                 tz_keyword = _get_from_keywords(node.keywords, "tz")
                 is_case_2 = tz_keyword is not None and not _is_none_constant(tz_keyword.value)
 
-                if not (is_case_1 or is_case_2):
+                # ex: `datetime.now().astimezone()`
+                is_case_3 = _is_followed_by_astimezone(node)
+
+                if not (is_case_1 or is_case_2 or is_case_3):
                     self.errors.append(DTZ005(node.lineno, node.col_offset))
 
             elif node.func.attr == "fromtimestamp":
@@ -131,7 +150,10 @@ class DateTimeZVisitor(ast.NodeVisitor):
                 tz_keyword = _get_from_keywords(node.keywords, "tz")
                 is_case_2 = tz_keyword is not None and not _is_none_constant(tz_keyword.value)
 
-                if not (is_case_1 or is_case_2):
+                # ex: `datetime.fromtimestamp(1234).astimezone()`
+                is_case_3 = _is_followed_by_astimezone(node)
+
+                if not (is_case_1 or is_case_2 or is_case_3):
                     self.errors.append(DTZ006(node.lineno, node.col_offset))
 
             elif node.func.attr == "strptime":
@@ -139,11 +161,7 @@ class DateTimeZVisitor(ast.NodeVisitor):
                 is_case_1 = _is_followed_by_replace_tzinfo(node)
 
                 # ex: `datetime.strptime(...).astimezone()`
-                parent = getattr(node, "_flake8_datetimez_parent", None)
-                pparent = getattr(parent, "_flake8_datetimez_parent", None)
-                is_case_2 = (
-                    isinstance(parent, ast.Attribute) and parent.attr == "astimezone" and isinstance(pparent, ast.Call)
-                )
+                is_case_2 = _is_followed_by_astimezone(node)
 
                 # ex: `datetime.strptime(..., '...%z...')`
                 format_arg = node.args[1] if 1 < len(node.args) else None
