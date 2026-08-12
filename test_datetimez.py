@@ -1,6 +1,7 @@
 import ast
 import tempfile
 import unittest
+from unittest import mock
 
 from flake8_datetimez import DateTimeZChecker
 
@@ -283,6 +284,26 @@ class TestDateTimeZ(unittest.TestCase):
             "foo.max\n"
         )
         self.assert_codes(errors, [])
+
+    def test_other_date_methods(self):
+        errors = self.write_file_and_run_checker("datetime.date.fromisoformat('2020-01-01')\ndate.isoformat()\n")
+        self.assert_codes(errors, [])
+
+    def test_uncalled_replace_and_astimezone(self):
+        # `.replace` / `.astimezone` referenced as a bound method is not a call,
+        # so it fixes nothing -- and must not crash the checker either
+        errors = self.write_file_and_run_checker(
+            "handler = datetime.datetime.min.replace\n"
+            "handler = datetime.datetime.strptime(a, b).replace\n"
+            "handler = datetime.datetime.now().astimezone\n"
+        )
+        self.assert_codes(errors, ["DTZ901", "DTZ007", "DTZ005"])
+
+    def test_stdin(self):
+        for filename in ("stdin", "-", None):
+            with mock.patch("pycodestyle.stdin_get_value", return_value="datetime.datetime.now()\n"):
+                errors = list(DateTimeZChecker(None, filename).run())
+            self.assert_codes(errors, ["DTZ005"])
 
     def test_pre_parsed_tree(self):
         # flake8 hands the plugin an already parsed tree instead of `None`
